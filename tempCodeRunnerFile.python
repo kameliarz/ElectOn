@@ -1,0 +1,11 @@
+inputan = "---------------------"
+inputan = list(inputan)
+print(len(inputan))
+
+inputan = "----------------------"
+inputan = list(inputan)
+print(len(inputan))
+
+inputan = "---------------"
+inputan = list(inputan)
+print(len(inputan))
