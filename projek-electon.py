@@ -19,7 +19,7 @@ def bounded_knapsack(capacity, items):
     best_capacity = max(range(capacity + 1), key=lambda x: dp[x])
     best_value = dp[best_capacity]
     selected_indices = track[best_capacity]
-    
+
     return best_value, selected_indices
 
 
@@ -27,6 +27,7 @@ def bounded_knapsack(capacity, items):
 # USER
 #==================================================================
 def optimalkan(username):
+    header("Optimalkan Penggunaan Peralatan Elektronik")
     df_brg = pd.read_csv("databarang.csv")
     df_kpst = pd.read_csv("kapasitasdayamax.csv")
     pemilikbrg = df_brg[df_brg["pemilik"] == username]
@@ -43,58 +44,75 @@ def optimalkan(username):
     else :
         print("Data barang Anda yang akan dioptimalisasikan : ")
         data = pemilikbrg[['namabarang', 'kapasitasdaya', 'prioritas', 'jumlah']]
-        print(data)
+        print(tabulate(data, headers='keys', tablefmt='grid'))
         kapasitasmax = int(df_kpst.loc[df_kpst['pemilik'] == username, 'kapasitasdayamax'].values[0])
-        print(f"Kapasitas daya max Anda :\t{kapasitasmax} watt")
-        
+        print(f"\nKapasitas daya max Anda :\t{kapasitasmax} watt")
+
         while(True):
+            waktu_penggunaan = {}
+            print("\n\nSilakan masukkan waktu penggunaan tiap barang (jam 0–23, pisahkan dengan spasi)\nmisal :   Masukkan jam penggunaan untuk kipas angin : 9 10 11 12 13 14\n")
+            for idx, row in pemilikbrg.iterrows():
+                nama_barang = row['namabarang']
+                waktu_barang = []
+
+                while True:
+                    jam_str = input(f"Masukkan jam penggunaan untuk '{nama_barang}': ")
+                    try:
+                        jam_list = [int(jam) for jam in jam_str.strip().split() if 0 <= int(jam) <= 23]
+                    except ValueError:
+                        print("|   Input tidak valid. Gunakan angka 0–23 dipisahkan spasi.")
+                        continue
+
+                    waktu_barang.extend(jam_list)
+
+                    tambah = input(f"Ada jam penggunaan tambahan untuk '{nama_barang}'? (y/n): ").lower()
+                    if tambah == 'y':
+                        continue
+                    elif tambah == 'n':
+                        break
+                    else:
+                        print("|   Input tidak valid. Dianggap 'tidak'.")
+                        break
+
+                waktu_penggunaan[nama_barang] = waktu_barang
+
+            print("\nData waktu penggunaan yang berhasil dicatat:")
+            for barang, jam in waktu_penggunaan.items():
+                print(f"- {barang}: {sorted(set(jam))} jam")
+
             konfirmasi = input(f"Lakukan optimasi? (y/n): ").lower()
             if konfirmasi == 'y':
-                items = []
-                asli_data = []  # menyimpan asal usul index ke data asli
-                for idx, row in pemilikbrg.iterrows():
-                    for _ in range(int(row['jumlah'])):
-                        items.append((row['namabarang'], row['kapasitasdaya'], row['prioritas']))
-                        asli_data.append(row)
+                hasil_optimasi_per_jam = {}
+                for jam in range(24):
+                    items_jam = []
+                    for idx, row in pemilikbrg.iterrows():
+                        nama = row['namabarang']
+                        if jam in waktu_penggunaan.get(nama, []):
+                            for _ in range(int(row['jumlah'])):
+                                items_jam.append((nama, row['kapasitasdaya'], row['prioritas']))
 
-                total_value, selected_indices = bounded_knapsack(kapasitasmax, items)
+                    if items_jam:
+                        total_nilai, selected_indices = bounded_knapsack(kapasitasmax, items_jam)
+                        hasil = defaultdict(int)
+                        total_kapasitas = 0
+                        for idx in selected_indices:
+                            barang = items_jam[idx]
+                            hasil[barang[0]] += 1
+                            total_kapasitas += barang[1]
+                        hasil_optimasi_per_jam[jam] = (total_kapasitas, total_nilai, hasil)
 
-                hasil = defaultdict(int)
-                total_kapasitas = 0
-
-                for idx in selected_indices:
-                    barang = items[idx]
-                    hasil[barang[0]] += 1
-                    total_kapasitas += barang[1]
-
+                print("\nHasil Optimasi per Jam:")
                 tabel = []
-                no = 1
-                for nama, jumlah in hasil.items():
-                    satuan_daya = df_brg[df_brg['namabarang'] == nama]['kapasitasdaya'].values[0]
-                    satuan_nilai = df_brg[df_brg['namabarang'] == nama]['prioritas'].values[0]
-                    tabel.append([
-                        no,
-                        nama,
-                        jumlah,
-                        satuan_daya,
-                        jumlah * satuan_daya,
-                        satuan_nilai,
-                        jumlah * satuan_nilai
-                    ])
-                    no += 1
-
-                tabel.append([
-                    '--------', '----------------', '-----------------', '-----------------', '--------------------','---------------------', '--------------'
-                ])
-                tabel.append([
-                    '', 'Total', '', '', total_kapasitas, '', total_value
-                ])
-
-                print("\nRincian Barang Terpilih:")
-                print(tabulate(tabel, headers=["No.", "Nama Barang", "Jumlah Diambil", "Daya per Item (Watt)", "Total Daya (Watt)", "Prioritas per Item", "Total Nilai"], tablefmt="github"))
+                for jam in range(24):
+                    if jam in hasil_optimasi_per_jam:
+                        total_daya, total_nilai, hasil = hasil_optimasi_per_jam[jam]
+                        daftar_barang = ", ".join([f"{nama} ({jumlah})" for nama, jumlah in hasil.items()])
+                        tabel.append([jam, total_daya, total_nilai, daftar_barang])
+                print(tabulate(tabel, headers=["Jam", "Total Daya", "Total Nilai", "Barang Terpilih"], tablefmt="grid"))
 
                 print("\n|   Anda akan diarahkan ke menu utama\n(Enter untuk melanjutkan.)")
                 input()
+                menu_utama(username)
                 break
             elif konfirmasi == 'n':
                 print("|   Optimalisasi dibatalkan.")
@@ -115,16 +133,27 @@ def kapasitas_daya_max(username):
             while(True):
                 inputan1 = input("Apakah Anda mau memasukkan kapasitas daya max Anda? (y/n)").lower()
                 if inputan1 == 'y':
-                    kapasitas = int(input("Masukkan kapasitas daya Anda : ")) #nanti mau dikasih filter, kalau bukan angka maka inputannya ditolak
+                    print("[1] 450 VA (360 watt)\n[2] 900 VA (720 watt)\n[3] 1300 VA (1040 watt)\n[4] 2200 VA (1760 watt)")
+                    kapasitas = int(input("Masukkan kapasitas daya Anda (1/2/3/4): "))
+                    match kapasitas:
+                        case 1:
+                            kapasitaswatt = 360
+                        case 2:
+                            kapasitaswatt = 720
+                        case 3:
+                            kapasitaswatt = 1040
+                        case 4:
+                            kapasitaswatt = 2200
+                        case _:
+                            print("\n|   Maaf inputan tidak sesuai, silahkan masukkan inputan yang sesuai.")
+                            print("(Enter untuk melanjutkan.)")
+                            input()   
                     data_baru = pd.DataFrame([{
                         'pemilik' : username,
-                        'kapasitasdayamax' : kapasitas
+                        'kapasitasdayamax' : kapasitaswatt
                     }])
                     data_baru.to_csv('kapasitasdayamax.csv', mode='a', index=False, header=False)
                     kapasitas_daya_max()
-                    break
-                elif inputan1 == 'n':
-                    menu_utama()
                     break
                 else :
                     print("\n|   Maaf inputan tidak sesuai, silahkan masukkan inputan yang sesuai.")
@@ -306,7 +335,9 @@ def menu_utama(namapengguna, baru=False):
             atur_data_barang(namapengguna)
         case 2 :
             kapasitas_daya_max(namapengguna)
-        case 3 | 4 | 5:
+        case 3 :
+            optimalkan(namapengguna)
+        case 4 | 5:
             print("Fitur belum tersedia, anda akan diarahkan ke menu. \n(Enter untuk melanjutkan.)")
             input()
             menu_utama(namapengguna)
