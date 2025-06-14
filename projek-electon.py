@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 import os
 from tabulate import tabulate
 from collections import defaultdict
@@ -26,6 +27,9 @@ def bounded_knapsack(capacity, items):
 #==================================================================
 # USER
 #==================================================================
+def simulasi_biaya(username):
+    pass
+
 def optimalkan(username):
     header("Optimalkan Penggunaan Peralatan Elektronik")
     df_brg = pd.read_csv("databarang.csv")
@@ -117,6 +121,7 @@ def optimalkan(username):
             elif konfirmasi == 'n':
                 print("|   Optimalisasi dibatalkan.")
                 print("\n|   Anda akan diarahkan ke menu utama\n(Enter untuk melanjutkan.)")
+                menu_utama(username)
                 input()
                 break
             else :
@@ -165,8 +170,28 @@ def kapasitas_daya_max(username):
             while(True):
                 inputan2 = input("\nApakah Anda ingin mengubah kapasitas daya max Anda? (y/n)").lower()
                 if inputan2 == 'y':
-                    kapasitasbaru = int(input("Masukkan kapasitas daya max yang baru : ")) #nanti kasih filter halangi selain angka
-                    df.loc[df['pemilik'] == username, 'kapasitasdayamax'] = kapasitasbaru
+                    while(True):
+                        print("Untuk mengganti kapasitas daya, Anda hanya diperbolehkan untuk mengganti pada kapasitas yang lebih tinggi.")
+                        print("[1] 450 VA (360 watt)\n[2] 900 VA (720 watt)\n[3] 1300 VA (1040 watt)\n[4] 2200 VA (1760 watt)")
+                        pilihan = int(input())
+                        match pilihan:
+                            case 1:
+                                kapasitaswatt = 360
+                            case 2:
+                                kapasitaswatt = 720
+                            case 3:
+                                kapasitaswatt = 1040
+                            case 4:
+                                kapasitaswatt = 2200
+                            case _:
+                                print("\n|   Maaf inputan tidak sesuai, silahkan masukkan inputan yang sesuai.")
+                                print("(Enter untuk melanjutkan.)")
+                                input()  
+                        if kapasitaswatt <= data :
+                            print("Maaf, Anda tidak bisa mengubah kapasitas. Silahkan pilih kapasitas yang lebih tinggi dari kapasitas Anda sebelumnya.")
+                        else : break   
+
+                    df.loc[df['pemilik'] == username, 'kapasitasdayamax'] = kapasitaswatt
                     df.to_csv("kapasitasdayamax.csv", index=False)
                     print("\n|   Kapasitas daya Anda berhasil diubah.")
                     print("(Enter untuk melanjutkan.)")
@@ -328,7 +353,7 @@ def menu_utama(namapengguna, baru=False):
         print(f"Selamat datang, {namapengguna}!")
     
     print("\n[1] Atur Data Barang Elektronik \n[2] Atur Kapasitas Daya \n[3] Optimalkan Penggunaan Peralatan Elektronik")
-    print("[4] Simulasikan Biaya Listrik \n[5] Simpan/Lihat Laporan \n[0] Keluar")
+    print("[4] Simulasikan Biaya Listrik \n[5] Lihat Laporan \n[0] Keluar")
     inputan3 = int(input("\nSilahkan pilih menu diatas (1/2/3/4/5/0) :"))
     match inputan3:
         case 1 :
