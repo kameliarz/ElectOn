@@ -118,7 +118,12 @@ def tampilkan_daftar_laporan(username):
         print("Laporan masih kosong.")
         return
 
-    daftar = df[['username', 'timestamp']].drop_duplicates().reset_index(drop=True)
+    df_user = df[df['username'] == username]
+    if df_user.empty:
+        print("Belum ada laporan untuk user ini.")
+        return
+
+    daftar = df_user[['timestamp']].drop_duplicates().reset_index(drop=True)
 
     print("\nLIHAT LAPORAN")
     for i, row in daftar.iterrows():
@@ -128,13 +133,13 @@ def tampilkan_daftar_laporan(username):
     try:
         pilihan = int(input("Pilih nomor laporan: ")) - 1
         if 0 <= pilihan < len(daftar):
-            username = daftar.loc[pilihan, 'username']
             timestamp = daftar.loc[pilihan, 'timestamp']
-            tampilkan_laporan_terpilih(df, username, timestamp)
+            tampilkan_laporan_terpilih(df_user, username, timestamp)
         else:
             print("Pilihan tidak valid.")
     except ValueError:
         print("Masukan harus berupa angka.")
+
 
 def simpan_ke_laporan(username, tabel):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -496,6 +501,7 @@ def menu_utama(namapengguna, baru=False):
             simulasi_biaya(namapengguna)
         case 5 :
             tampilkan_daftar_laporan(namapengguna)
+            menu_utama(namapengguna)
         case 0 :
             logout()
         case _ :
