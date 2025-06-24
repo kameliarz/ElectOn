@@ -501,6 +501,7 @@ def menu_utama(namapengguna, baru=False):
             simulasi_biaya(namapengguna)
         case 5 :
             tampilkan_daftar_laporan(namapengguna)
+            input("(Enter untuk kembali.)")
             menu_utama(namapengguna)
         case 0 :
             logout()
